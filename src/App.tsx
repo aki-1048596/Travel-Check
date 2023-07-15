@@ -13,16 +13,30 @@ type ItemType = {
 //comp-App
 const App = () => {
   const [items, setItems] = useState<ItemType[]>([]);
-  const handleAddItems = (newItem: ItemType) => {
+  const handleAddItem = (newItem: ItemType) => {
     setItems((items) => [...items, newItem]);
+  };
+  const handleDeleteItem = (itemID: number) => {
+    setItems((items) => items.filter((item) => item.id !== itemID));
+  };
+  const handleCheckedItem = (itemID: number) => {
+    setItems((items) =>
+      items.map((item) =>
+        item.id === itemID ? { ...item, packed: !item.packed } : item
+      )
+    );
   };
 
   return (
     <div className="app">
       <Logo />
-      <Form onAddItem={handleAddItems} />
-      <PackingList items={items} />
-      <Stats />
+      <Form onAddItem={handleAddItem} />
+      <PackingList
+        items={items}
+        onDeleteItem={handleDeleteItem}
+        onCheckedItem={handleCheckedItem}
+      />
+      <Stats items={items} />
     </div>
   );
 };
@@ -84,39 +98,84 @@ const Form: React.FC<FormType> = ({ onAddItem }) => {
 //type-PackingListType
 type PackingListType = {
   items: ItemType[];
+  onDeleteItem: (itemID: number) => void;
+  onCheckedItem: (itemID: number) => void;
 };
 
 //comp-PackingList
-const PackingList: React.FC<PackingListType> = ({ items }) => {
+const PackingList: React.FC<PackingListType> = ({
+  items,
+  onDeleteItem,
+  onCheckedItem,
+}) => {
   return (
     <div className="list">
       <ul>
         {items.map((item) => (
-          <Item key={item.id} {...item} />
+          <Item
+            key={item.id}
+            deleteItem={onDeleteItem}
+            checkedItem={onCheckedItem}
+            renderItem={item}
+          />
         ))}
       </ul>
     </div>
   );
 };
 
+//type-ItemCompType
+type ItemCompType = {
+  deleteItem: (itemID: number) => void;
+  checkedItem: (itemID: number) => void;
+  renderItem: ItemType;
+};
+
 //comp-Item
-const Item = (props: ItemType) => {
+const Item: React.FC<ItemCompType> = ({
+  deleteItem,
+  renderItem,
+  checkedItem,
+}) => {
   return (
     <li>
-      <span style={props.packed ? { textDecoration: "line-through" } : {}}>
-        {props.quantity} {props.itemName}
+      <input
+        type="checkbox"
+        checked={renderItem.packed}
+        onChange={() => checkedItem(renderItem.id)}
+      />
+      <span style={renderItem.packed ? { textDecoration: "line-through" } : {}}>
+        {renderItem.quantity} {renderItem.itemName}
       </span>
 
-      <button>❌</button>
+      <button onClick={() => deleteItem(renderItem.id)}>❌</button>
     </li>
   );
 };
 
+//type-StatsType
+type StatsType = {
+  items: ItemType[];
+};
 //comp-Stats
-const Stats = () => {
+const Stats: React.FC<StatsType> = ({ items }) => {
+  if (!items.length)
+    return (
+      <footer className="stats">
+        <em>Start adding items to your packing list 🧳</em>
+      </footer>
+    );
+
+  const totalItems = items.length;
+  const packedItems = items.filter((item) => item.packed).length;
+  const packedPercentage = Math.round((packedItems / totalItems) * 100);
   return (
     <footer className="stats">
-      <em>You have x items on your list. You've already packed y items (z%)</em>
+      <em>
+        {packedPercentage == 100
+          ? `You got everything! You're ready to go ✈️`
+          : `You have ${totalItems} items on your list. You've already packed ${packedItems} items (${packedPercentage}%)`}
+      </em>
     </footer>
   );
 };
