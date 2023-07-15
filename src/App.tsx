@@ -13,6 +13,27 @@ type ItemType = {
 //comp-App
 const App = () => {
   const [items, setItems] = useState<ItemType[]>([]);
+  const [sortBy, setSortBy] = useState("oldest");
+  const handleSortBy = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!items.length) return;
+
+    const sortedItems: ItemType[] = [...items];
+    const selectedSortBy = e.target.value;
+
+    setSortBy(selectedSortBy);
+
+    if (selectedSortBy === "a-z") {
+      sortedItems.sort((a, b) => a.itemName.localeCompare(b.itemName));
+    } else if (selectedSortBy === "oldest") {
+      sortedItems.sort((a, b) => a.id - b.id);
+    } else if (selectedSortBy === "newest") {
+      sortedItems.sort((a, b) => b.id - a.id);
+    } else if (selectedSortBy === "packed") {
+      sortedItems.sort((a, b) => Number(a.packed) - Number(b.packed));
+    }
+
+    setItems(sortedItems);
+  };
   const handleAddItem = (newItem: ItemType) => {
     setItems((items) => [...items, newItem]);
   };
@@ -35,6 +56,9 @@ const App = () => {
         items={items}
         onDeleteItem={handleDeleteItem}
         onCheckedItem={handleCheckedItem}
+        setItems={setItems}
+        sortBy={sortBy}
+        onSortBy={handleSortBy}
       />
       <Stats items={items} />
     </div>
@@ -100,6 +124,9 @@ type PackingListType = {
   items: ItemType[];
   onDeleteItem: (itemID: number) => void;
   onCheckedItem: (itemID: number) => void;
+  setItems: (items: ItemType[]) => void;
+  sortBy: string;
+  onSortBy: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 };
 
 //comp-PackingList
@@ -107,6 +134,9 @@ const PackingList: React.FC<PackingListType> = ({
   items,
   onDeleteItem,
   onCheckedItem,
+  setItems,
+  sortBy,
+  onSortBy,
 }) => {
   return (
     <div className="list">
@@ -120,6 +150,16 @@ const PackingList: React.FC<PackingListType> = ({
           />
         ))}
       </ul>
+
+      <div className="actions">
+        <select value={sortBy} onChange={(e) => onSortBy(e)}>
+          <option value="oldest">Sort by oldest</option>
+          <option value="newest">Sort by newest</option>
+          <option value="a-z">Sort by a-z</option>
+          <option value="packed">Sort by packed status</option>
+        </select>
+        <button onClick={() => setItems([])}>Clear list</button>
+      </div>
     </div>
   );
 };
